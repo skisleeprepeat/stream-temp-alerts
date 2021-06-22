@@ -79,10 +79,6 @@ def build_html_email_message(sites_data):
     # put all the parts together
     email_html = header_html + table_html + risk_key_and_footer
 
-    # dump the message string to an html file for checking/viewing while building the email up
-    with open("old/template_practice.html", 'w') as html_file:
-        html_file.write(email_html)
-
     # return a long html string
     return email_html
 

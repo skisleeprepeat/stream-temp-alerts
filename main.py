@@ -1,9 +1,9 @@
 # AUTOMATED WATER TEMPERATURE ALERT PROGRAM
 
-'''This program uses USGS webservices to call temperature data from gauges
+"""This program uses USGS webservices to call temperature data from gauges
 on the Eagle and Colorado River, assess the temperatures against cold-
 water fishery risk levels, and utilize email and social media portals to
-issue alerts for area anglers.'''
+issue alerts for area anglers."""
 
 # Author: Bill Hoblitzell/Lotic Hydrological 6/14/2021
 # Contact: bill@lotichydrological.com, www.lotichydrological.com
@@ -117,15 +117,16 @@ def evaluate_temp_risk(data_list):
         print(site_info)
         temp = float(site_info[3])
         risk = 'Not assigned'
-        if temp < 67:
+        if temp < 65:
             risk = "LOW"
-        elif 67 <= temp < 70:
+        elif 65 <= temp < 70:
             risk = "MODERATE"
         elif temp >= 70:
             risk = "HIGH"
         elif temp is None:
             risk = "<no rating>"
-        print(f"Evaluating temperature for fishing risk level at {site_info[0]}, current temp is {temp}, risk is {risk}.")
+        print(f"Evaluating temperature for fishing risk level at {site_info[0]}, current temp is {temp}, "
+              f"risk is {risk}.")
         site_info.append(risk)
 
 
@@ -169,8 +170,8 @@ def add_risk_message(info_lists):
                        f" > Water temperatures are generally safe for fishing and fish health."
         elif risk == "MODERATE":
             risk_msg = f"Water temperature risk currently is MODERATE for fishing {reach_alias.upper()}.\n\n" \
-                       f" > Monitor water temperatures closely for further warming and consider packing it up as they " \
-                       f"approach or exceed 67 degrees F.\n" \
+                       f" > Monitor water temperatures closely for further warming and consider packing it up as " \
+                       f"they approach or exceed 67 degrees F.\n" \
                        f" > Stress from being caught can impact or kill fish well after the time of release.\n" \
                        f" > Consider avoiding this stream reach until water temperatures cool off."
         elif risk == "HIGH":
@@ -218,7 +219,7 @@ site_list = [
 ]
 
 # Set the hours that alerts will go out here, using a string format 'HH' (single digits preceded by '0')
-notification_hours = ['14', '16']
+notification_hours = ['15', '16']
 
 
 ##############################################################################
@@ -295,11 +296,9 @@ else:
 # TODO: "yesterday the temperature climbed over at 67 at [time] and reached a max of [max_temp]. Today the high air temperature forecasted is...
 
 
-
 ###############################################################################
 # EXTRAS
 # Periodically send/test mail here to see spam rating:  https://www.mail-tester.com/; current rating 9.9/10 (very good)
-
 
 
 ##############################################################################
