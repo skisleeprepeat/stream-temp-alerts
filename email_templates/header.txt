@@ -1,0 +1,15 @@
+Subject: Automated Eagle River Water Temp Alert testing
+
+
+-------------------------------------------------------------------------------------
+Eagle County Stream Temperature Updates
+
+Here is your updated stream temperature conditions summary for Eagle County rivers, valid at [current_time]:
+
+Please be aware of water temps in your destination and if they hit concern levels, don't play or fight fish,
+unhook and return them quickly to the water, and consider stopping for the day. Fishing during very warm water
+events may be unhealthy or even lethal for trout.
+
+During hot weather, water temperatures can rise to unhealthy levels soon after noon. They typically peak
+slightly after the hottest part of the day and may not return to safe fishing levels until after dark.  If you
+anticipate high afternoon temperatures, start and quit early, move higher, or wait until late evening to resume.
