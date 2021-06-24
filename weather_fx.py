@@ -1,12 +1,10 @@
+"""
+Collection of functions to call NOAA and get the local weather forecast.
+Bill Hoblitzell 6/24/2021
+"""
+
+# Requirements
 import requests
-# import json
-
-
-locations = [
-    ["Statebridge/Upper Colorado Region", "39.874807", "-106.687783"],
-    ["Lower Eagle/Colorado R @ Dotsero", "39.650938", "-106.942805"],
-    ["Basalt/Lower Roaring Fork Valley", "39.413287", "-107.215794"]
-]
 
 
 def get_noaa_grid_endpoints(coords):
@@ -59,9 +57,19 @@ def build_fx_table(locations):
     fx_table = f"<h3>Zone weather forecasts</h3><table cellpadding='3' style='border: 1px solid; border-collapse:collapse;'>{table_header}{inner_table}</table><br>"
     return fx_table
 
+#################################################################################################
+# testing
+
+# Locations are currently hard-coded into the 'build_email' function 'build_html_email_message()'
+# locations = [
+#     ["Statebridge/Upper Colorado Region", "39.874807", "-106.687783"],
+#     ["Lower Eagle/Colorado R @ Dotsero", "39.650938", "-106.942805"],
+#     ["Basalt/Lower Roaring Fork Valley", "39.413287", "-107.215794"]
+# ]
 
 # fx_html = build_fx_table(locations)
 
+# Dump the html to a file for viewing the table in the browser
 # with open('fx_html.html', 'w') as f:
 #     f.write(f"<html><body>{fx_html}</html></body>")
 
