@@ -6,6 +6,8 @@ import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import weather_fx
+
 
 ###############################################################################
 # Constants for html formatting
@@ -18,34 +20,39 @@ risk_colors = {
     "red": "red"
 }
 
+
 ##############################################################################
 # Mailing functions
 ###############################################################################
 
 
 def build_table_rows(sites_data):
-    table_header_string = "<tr><td colspan='2' style='font-size: 1.3rem'><h3>Current Stream Conditions</h3></td></tr>" \
+    table_header_str = "<tr><td colspan='2' style='font-size: 1.3rem;'><h3>Current Stream Conditions</h3></td></tr>" \
                     "<tr style='font-size:1.2rem'><td><strong>Location</strong></td><td><strong>Time</strong></td>" \
-                    "<td><strong>Temp &#176;F</strong></td><td><strong>Fishing Risk Level</strong></td></tr>"
-    all_rows_string = ""
+                    "<td><strong>Temp &#176;F</strong></td><td><strong>Fishing Risk</strong></td><td>" \
+                    "<strong>Flow (cfs)<strong></td><td style='text-align:center;'><strong>Flow, % of<br>" \
+                    "Median<strong></td></tr>"
+    all_rows_str = ""
     for site in sites_data:
         risk_color = ""
-        if site[4] == "LOW":
+        if site[5] == "LOW":
             risk_color = risk_colors["green"]
-        if site[4] == "MODERATE":
+        if site[5] == "MODERATE":
             risk_color = risk_colors["yellow"]
-        if site[4] == "HIGH":
+        if site[5] == "HIGH":
             risk_color = risk_colors["red"]
-        row_string = f"<tr><" \
+        row_str = f"<tr><" \
                      f"td>{site[0]}</td>" \
                      f"<td style='text-align:center'>{site[2]}</td>" \
                      f"<td style='text-align:center'>{site[3]}</td>" \
-                     f"<td style='text-align:center; font-weight: bold; background-color:{risk_color}'>{site[4]}</td>" \
+                     f"<td style='text-align:center; font-weight: bold; background-color:{risk_color}'>{site[5]}</td>" \
+                     f"<td style='text-align:center; color: blue'><strong>{site[4]}</strong></td>" \
+                     f"<td style='text-align:center; color: blue'><em>{site[8]}%</em></td>" \
                      f"</tr>"
 
-        all_rows_string = all_rows_string + row_string
-    full_table_string = f"<div><hr><nbsp><table cellpadding='3'>{table_header_string}{all_rows_string}</table></div>"
-    return full_table_string
+        all_rows_str = all_rows_str + row_str
+    full_table_str = f"<div><hr><nbsp><table cellpadding='3'>{table_header_str}{all_rows_str}</table></div>"
+    return full_table_str
 
 
 def build_html_email_message(sites_data):
@@ -74,6 +81,16 @@ def build_html_email_message(sites_data):
     contents = contents.replace('[risk_green]', risk_colors["green"])
     contents = contents.replace('[risk_yellow]', risk_colors["yellow"])
     contents = contents.replace('[risk_red]', risk_colors["red"])
+    # add in the weather forecast table
+    locations = [
+        ["Statebridge/Upper Colorado Region", "39.874807", "-106.687783"],
+        ["Lower Eagle/Colorado R @ Dotsero", "39.650938", "-106.942805"],
+        ["Basalt/Lower Roaring Fork Valley", "39.413287", "-107.215794"]
+    ]
+
+    fx = weather_fx.build_fx_table(locations)
+    contents = contents.replace('[WEATHER_FX]', fx)
+
     risk_key_and_footer = contents
 
     # put all the parts together
@@ -113,7 +130,7 @@ def build_text_email_message(sites_data):
         message_footer = txt_file.read()
 
     message_body = message_header + full_summary + message_footer
-    print(message_body)
+    # print(message_body)
     return message_body
 
 

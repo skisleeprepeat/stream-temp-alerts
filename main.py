@@ -20,11 +20,16 @@ import os
 import sys
 import requests
 from datetime import datetime
-import smtplib
 import build_email
 from dotenv import load_dotenv
 import mail_chimp_functions as mc
 from time import sleep
+import usgs_calls
+
+
+# Active during testing only, comment out otherwise
+import email_tests
+
 
 ###############################################################################
 # CONFIG
@@ -55,8 +60,15 @@ def call_USGS_api(site):
     """Calls the USGS Webservice and passes the API a gauge ID to get the most recent water temperature reading.
     Return a JSON object"""
 
-    print(f"Calling USGS Webservice for {site}")
-    url = f"https://waterservices.usgs.gov/nwis/iv/?format=json&sites={site}&parameterCd=00010&siteStatus=all"
+    # call only for current temp
+    # print(f"Calling USGS Webservice for {site}")
+    # url = f"https://waterservices.usgs.gov/nwis/iv/?format=json&sites={site}&parameterCd=00010&siteStatus=all"
+
+    # call for temp and discharge
+    params = ['00010', '00060']
+    param_str = ','.join(params)
+    url = f"https://waterservices.usgs.gov/nwis/iv/?format=json&sites={site}&parameterCd={param_str}&siteStatus=all"
+
     print(url)
     try:
         response = requests.get(url, timeout=5)
@@ -73,9 +85,16 @@ def unpack_USGS_response(data):
 
     print("Unpacking JSON response")
     try:
+        # unpack the temperature reading and observation datetime
         temp_c = data["value"]["timeSeries"][0]["values"][0]["value"][0]["value"]
-        obs_datetime = data["value"]["timeSeries"][0]["values"][0]["value"][0]["dateTime"]
-        print("Data added to site list")
+        obs_dt = data["value"]["timeSeries"][0]["values"][0]["value"][0]["dateTime"]
+        try:
+            # unpack the discharge separately, not all temp sites have it
+            q_cfs = data["value"]["timeSeries"][1]["values"][0]["value"][0]["value"]
+        except (IndexError, KeyError) as error:
+            print(f"Unpacking discharge attempt resulted in: {error}")
+            q_cfs = '--'
+        print("Site data added to site list")
     except (NameError, KeyError) as error:
         print("Unpacking JSON object was unsuccessful, check for key errors or that data actually exists.")
         return error
@@ -83,12 +102,12 @@ def unpack_USGS_response(data):
         # Sites that had temp monitoring in the past will return the last date and obs that exists in the record
         # to avoid this, check to see that the observation date matches today's date
         if datetime.now().date().today().strftime("%Y-%m-%d") == \
-                datetime.strptime(obs_datetime, '%Y-%m-%dT%H:%M:%S.%f%z').date().strftime("%Y-%m-%d"):
+                datetime.strptime(obs_dt, '%Y-%m-%dT%H:%M:%S.%f%z').date().strftime("%Y-%m-%d"):
             temp_f = round(float(temp_c) * (9 / 5) + 32, 1)
-            obs_time = datetime.strptime(obs_datetime, '%Y-%m-%dT%H:%M:%S.%f%z').time().strftime("%H:%M")
+            obs_time = datetime.strptime(obs_dt, '%Y-%m-%dT%H:%M:%S.%f%z').time().strftime("%H:%M")
             site_name = data["value"]["timeSeries"][0]["sourceInfo"]["siteName"]
             site_id = data["value"]["timeSeries"][0]["sourceInfo"]["siteCode"][0]["value"]
-            return [site_name, site_id, obs_time, temp_f]
+            return [site_name, site_id, obs_time, temp_f, q_cfs]
 
 
 def gather_site_data(sites):
@@ -97,7 +116,7 @@ def gather_site_data(sites):
 
     assessment_list = []
     for site in sites:
-        data = call_USGS_api(site)
+        data = usgs_calls.call_USGS_api(site)
         if data is not None:
             print(f"Assessing {site}")
             assessment = unpack_USGS_response(data)
@@ -114,7 +133,8 @@ def evaluate_temp_risk(data_list):
      rating to that site's information list"""
 
     for site_info in data_list:
-        print(site_info)
+        print(f"Site data: {site_info}")
+        print(site_info[3])
         temp = float(site_info[3])
         risk = 'Not assigned'
         if temp < 65:
@@ -163,8 +183,8 @@ def add_risk_message(info_lists):
     in the plain text fallback email."""
 
     for info_list in info_lists:
-        risk = info_list[4]
-        reach_alias = info_list[5]
+        risk = info_list[5]
+        reach_alias = info_list[6]
         if risk == "LOW":
             risk_msg = f"Water temperature risk currently is LOW for fishing {reach_alias.upper()}.\n\n" \
                        f" > Water temperatures are generally safe for fishing and fish health."
@@ -181,6 +201,10 @@ def add_risk_message(info_lists):
         else:
             risk_msg = "No risk level currently assigned for this reach"
         info_list.append(risk_msg)
+        # print(info_list)
+
+
+
 
 
 def check_time(alert_times):
@@ -206,8 +230,8 @@ def check_time(alert_times):
 
 # Stream gauge sites that also have temperature relevant to Eagle County
 site_list = [
-    '394220106431500',  # Eagle River blw Milk Creek at Wolcott (Lower Eagle)
     '09066510',  # Gore Creek at Mouth (below Vail)
+    '394220106431500',  # Eagle River blw Milk Creek at Wolcott (Lower Eagle)
     '09058000',  # Colorado River at Kremmling (Gore Canyon)
     '09060799',  # Colorado River at Catamount (Downstream of State Bridge)
     '09070500',  # Colorado River at Dotsero (Below Eagle River confluence)
@@ -219,7 +243,7 @@ site_list = [
 ]
 
 # Set the hours that alerts will go out here, using a string format 'HH' (single digits preceded by '0')
-notification_hours = ['15', '16']
+notification_hours = ['14', '15', '16', '20']
 
 
 ##############################################################################
@@ -241,48 +265,54 @@ if sites_data is not None:
     # add some information for the email
     get_river_reach(sites_data)
     add_risk_message(sites_data)
+    usgs_calls.calc_flow_stats(sites_data)
+    print(sites_data)
+    # sys.exit() #only run to here when feature building
 
     # create the email message body
     text_content = build_email.build_text_email_message(sites_data)
     html_content = build_email.build_html_email_message(sites_data)
 
     # # Send email via MailChimp by creating a Campaign, populating an email, then sending it.
-    current_campaign_id = mc.create_new_daily_campaign(
-        api_key=MC_API_KEY,
-        server_prefix=MC_SERVER_PREFIX,
-        audience_list=ERWC_LIST,
-        segment_id=int(ALERT_SEGMENT_ID),
-        reply_to='alerts@erwc.org'
-    )
+    # current_campaign_id = mc.create_new_daily_campaign(
+    #     api_key=MC_API_KEY,
+    #     server_prefix=MC_SERVER_PREFIX,
+    #     audience_list=ERWC_LIST,
+    #     segment_id=int(ALERT_SEGMENT_ID),
+    #     reply_to='alerts@erwc.org'
+    # )
+    #
+    # if current_campaign_id is not None:
+    #
+    #     mc.upload_email_contents(
+    #         api_key=MC_API_KEY,
+    #         server_prefix=MC_SERVER_PREFIX,
+    #         campaign_id_str=current_campaign_id,
+    #         html_msg=html_content,
+    #         text_msg=text_content
+    #     )
+    #
+    #     mc.send_email_campaign(
+    #         api_key=MC_API_KEY,
+    #         server_prefix=MC_SERVER_PREFIX,
+    #         campaign_id_str=current_campaign_id
+    #     )
+    #
+    #     # campaign sending may take several seconds, pause execution until sending is finished, otherwise
+    #     # the delete function call may return an error.
+    #     sleep(10)
+    #
+    #     mc.delete_campaign(
+    #         api_key=MC_API_KEY,
+    #         server_prefix=MC_SERVER_PREFIX,
+    #         campaign_id_str=current_campaign_id
+    #     )
+    #
+    # else:
+    #     print('Email Campaign was not successfully created, stopping program.')
 
-    if current_campaign_id is not None:
-
-        mc.upload_email_contents(
-            api_key=MC_API_KEY,
-            server_prefix=MC_SERVER_PREFIX,
-            campaign_id_str=current_campaign_id,
-            html_msg=html_content,
-            text_msg=text_content
-        )
-
-        mc.send_email_campaign(
-            api_key=MC_API_KEY,
-            server_prefix=MC_SERVER_PREFIX,
-            campaign_id_str=current_campaign_id
-        )
-
-        # campaign sending may take several seconds, pause execution until sending is finished, otherwise
-        # the delete function call may return an error.
-        sleep(10)
-
-        mc.delete_campaign(
-            api_key=MC_API_KEY,
-            server_prefix=MC_SERVER_PREFIX,
-            campaign_id_str=current_campaign_id
-        )
-
-    else:
-        print('Email Campaign was not successfully created, stopping program.')
+    # Send single email with smtplib to personal addresses for feature testing
+    email_tests.send_smtp_email(text_content, html_content)
 
 else:
     print("No viable data objects returned from USGS webservice, exiting program, no alerts sent.")
