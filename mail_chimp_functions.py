@@ -1,7 +1,7 @@
 # Mail_chimp_api.py contains functions for accessing ERWC email user lists and sending automated emails to MailChimp
 # Bill Hoblitzell 6/22/2021
 
-import mailchimp_marketing as MailchimpMarketing
+import mailchimp_marketing as MCM
 from mailchimp_marketing.api_client import ApiClientError
 from datetime import datetime
 
@@ -13,8 +13,8 @@ def create_new_daily_campaign(api_key, server_prefix, audience_list, segment_id,
     # Additional variables for campaign creation
     subject_date = f"{datetime.now().strftime('%A')} {datetime.now().strftime('%B')} {datetime.now().strftime('%d')}"
     title_time = f"{datetime.now().strftime('%H:%M')}"
-    subject_str = f"ERWC Stream Temperature Update for {subject_date}"
-    title_str = f"Temp Alert for {subject_date} at {title_time}"
+    subject_str = f"ERWC Stream Conditions Update, {subject_date}"
+    title_str = f"Temperature and streamflow conditions for {subject_date} at {title_time}"
     # Campaign information:
     # The audience list is the full ERWC mailing list id, it is then subsetted by segment.
     # ALERT_SEGMENT_ID was created in the MailChimp web GUI by segmenting  using the 'River Alert Recipient' tag.
@@ -26,7 +26,7 @@ def create_new_daily_campaign(api_key, server_prefix, audience_list, segment_id,
     }
 
     try:
-        client = MailchimpMarketing.Client()
+        client = MCM.Client()
         client.set_config({
             "api_key": api_key,
             "server": server_prefix
@@ -66,7 +66,7 @@ def upload_email_contents(api_key, server_prefix, campaign_id_str, html_msg, tex
     """Update the draft (un-sent) Campaign with email contents by sending it a string of html content and text
     content for fallback"""
     try:
-        client = MailchimpMarketing.Client()
+        client = MCM.Client()
         client.set_config({
             "api_key": api_key,
             "server": server_prefix
@@ -88,7 +88,7 @@ def upload_email_contents(api_key, server_prefix, campaign_id_str, html_msg, tex
 def send_email_campaign(api_key, server_prefix, campaign_id_str):
     """Send the email campaign"""
     try:
-        client = MailchimpMarketing.Client()
+        client = MCM.Client()
         client.set_config({
             "api_key": api_key,
             "server": server_prefix
@@ -105,16 +105,15 @@ def delete_campaign(api_key, server_prefix, campaign_id_str):
     """Remove the campaign from the account (this application generates a new campaign for every daily email,
     it will accumulate campaigns quickly in the MailChimp dash if not removed."""
     try:
-        client = MailchimpMarketing.Client()
+        client = MCM.Client()
         client.set_config({
             "api_key": api_key,
             "server": server_prefix
         })
         response = client.campaigns.remove(campaign_id_str)
-        print("Email Campaign {campaign_id_str} has been cleaned/removed")
-        #print(response)
+        print(response)
+        print(f"Email Campaign {campaign_id_str} has been cleaned/removed")
     except ApiClientError as error:
-        print("Error: {}".format(error.text))
-
+        print(f"Error:\n{error.text}")
 
 #

@@ -6,11 +6,9 @@ import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import weather_fx
-
 
 ###############################################################################
-# Constants for html formatting
+# Constants for html table formatting
 ###############################################################################
 
 # Risk Level colors
@@ -20,47 +18,145 @@ risk_colors = {
     "red": "red"
 }
 
+# discharge colors based on USGS coloring scheme
+q_colors = {
+    "orange": "#f3a711",
+    "yellow": "yellow",
+    "green": "#32CD32",
+    "light-blue-green": "#00f4ef",
+    "blue": "#1870d5"
+}
+
 
 ##############################################################################
 # Mailing functions
 ###############################################################################
 
+# Testing dictionary with example key/value pairs
+# {'site': '09064600', 'yesterday_mean_q': 57, 'yesterday_max_t': nan, 'alias': 'Upper Eagle River, Minturn Area', 'risk': '<no rating>', 'percent_of_median': 76}
 
-def build_table_rows(sites_data):
-    table_header_str = "<tr><td colspan='2' style='font-size: 1.3rem;'><h3>Current Stream Conditions</h3></td></tr>" \
-                    "<tr style='font-size:1.2rem'><td><strong>Location</strong></td><td><strong>Time</strong></td>" \
-                    "<td><strong>Temp &#176;F</strong></td><td><strong>Fishing Risk</strong></td><td>" \
-                    "<strong>Flow (cfs)<strong></td><td style='text-align:center;'><strong>Flow, % of<br>" \
-                    "Median<strong></td></tr>"
+
+def build_yesterday_conditions_table(site_data_list):
+    """
+    Create a color-coded html table element of temperatures, flows, and fish risk rating from
+    the previous afternoon gauge site readings. Return a string of html to use in the update
+    email.
+    """
+    table_header_str = "<tr>" \
+                       "<th style='text-align:center; border-bottom: solid 1px;'><strong>Location</strong></th>" \
+                       "<th style='text-align:center; word-wrap:break-word; max-width:100px; border-bottom: solid 1px; border-left: 1px solid; '><strong>Yesterday High Water Temp &#176;F</strong></th>" \
+                       "<th style='text-align:center; word-wrap:break-word; max-width:150px; border-bottom: solid 1px;'><strong>Yesterday PM Fishing Risk</strong></th>" \
+                       "<th style='text-align:center; border-bottom: solid 1px; border-left: 1px solid'><strong>Streamflow (cfs)</strong></th>" \
+                       "<th style='text-align:center; word-wrap:break-word; max-width:120px;border-bottom: solid 1px;'><strong>Percent of Median Flow for this Date<strong></th>" \
+                       "<th style='text-align:center; word-wrap:break-word; max-width:150px;border-bottom: solid 1px;'><strong>Seasonal Flow Conditions Rating<strong></th>" \
+                       "</tr>"
+
     all_rows_str = ""
-    for site in sites_data:
-        risk_color = ""
-        if site[5] == "LOW":
-            risk_color = risk_colors["green"]
-        if site[5] == "MODERATE":
-            risk_color = risk_colors["yellow"]
-        if site[5] == "HIGH":
-            risk_color = risk_colors["red"]
-        row_str = f"<tr><" \
-                     f"td>{site[0]}</td>" \
-                     f"<td style='text-align:center'>{site[2]}</td>" \
-                     f"<td style='text-align:center'>{site[3]}</td>" \
-                     f"<td style='text-align:center; font-weight: bold; background-color:{risk_color}'>{site[5]}</td>" \
-                     f"<td style='text-align:center; color: blue'><strong>{site[4]}</strong></td>" \
-                     f"<td style='text-align:center; color: blue'><em>{site[8]}%</em></td>" \
-                     f"</tr>"
+    for site_info in site_data_list:
+        print(f"site_info: {site_info}")
+        # assign css cell colors for temperature risk
+        if site_info['t_risk'] == "LOW":
+            risk_col = risk_colors["green"]
+        elif site_info['t_risk'] == "CONCERN":
+            risk_col = risk_colors["yellow"]
+        elif site_info['t_risk'] == "HIGH":
+            risk_col = risk_colors["red"]
+        else:
+            risk_col = "white"
 
+        # assign css colors for flow conditions
+        q_rating = site_info['q_rating']
+
+        if q_rating == "Low":
+            q_col = q_colors["orange"]
+        elif q_rating == "Below Normal":
+            q_col = q_colors["yellow"]
+        elif q_rating == "Normal":
+            q_col = q_colors["green"]
+        elif q_rating == "Above Normal":
+            q_col = q_colors["light-blue-green"]
+        elif q_rating == "High":
+            q_col = q_colors["blue"]
+        else:
+            q_col = "white"
+
+        row_str = f"<tr>" \
+                  f"<td style='font-size:0.9rem; '>{site_info['alias']}</td>" \
+                  f"<td style='text-align:center; border-left: 1px solid; background-color:{risk_col};'>{site_info['yesterday_max_t']}</td>" \
+                  f"<td style='text-align:center; font-weight: bold; background-color:{risk_col};'>{site_info['t_risk']}</td>" \
+                  f"<td style='text-align:center; color:DarkBlue; border-left: 1px solid; '>{site_info['yesterday_mean_q']}</td>" \
+                  f"<td style='text-align:center; color:DarkBlue;'>{site_info['percent_of_median']} %</td>" \
+                  f"<td style='text-align:center; background-color:{q_col}'><strong>{site_info['q_rating'].upper()}</strong></td>" \
+                  f"</tr>"
         all_rows_str = all_rows_str + row_str
-    full_table_str = f"<div><hr><nbsp><table cellpadding='3'>{table_header_str}{all_rows_str}</table></div>"
+
+    full_table_str = f"<div><hr><nbsp><h3>Yesterday's <em>OBSERVED</em> Stream Temperature and Flow Conditions</h3>" \
+                     f"<table cellspacing='0' cellpadding='3' style='border: 1px solid black;'>" \
+                     f"{table_header_str}{all_rows_str}</table></div>" \
+                     f"<p style='font-size:90%;'>This data service is made possible by real-time stream monitoring " \
+                     f"sites operated by the " \
+                     f"<a href='https://www.usgs.gov/centers/co-water/' target='_blank'>US Geological Survey</a> and the " \
+                     f"<a href='https://www.coloradoriverdistrict.org' target='_blank'>Colorado River District</a>, " \
+                     f"with public funding from national, state, and local partners like " \
+                     f"<a href='https://www.erwc.org' target='_blank'>Eagle River Watershed Council</a>, " \
+                     f"<a href='https://www.erwsd.org' target='_blank'>Eagle River Water and Sanitation District</a>," \
+                     f" and <a href='https://www.eaglecounty.us' target='_blank'>Eagle County Government</a>.</p><br>"
     return full_table_str
 
 
-def build_html_email_message(sites_data):
+def build_forecast_table(zone_list):
+    table_header_str = "<tr>" \
+                       "<th style='text-align:center; border-bottom: solid 1px; '><strong>River Zone</strong></th>" \
+                       "<th style='text-align:center; word-wrap:break-word; max-width:120px; border-bottom: solid 1px; border-left: 1px solid;'><strong>Current Morning Water Temp &#176;F</strong></th>" \
+                       "<th style='text-align:center; word-wrap:break-word; max-width:150px; word-wrap: break-word; max-width: 150px; border-bottom: solid 1px; border-left: 1px solid;'><strong>Afternoon Predicted High Water Temp &#176;F</strong></th>" \
+                       "<th style='text-align:center; word-wrap:break-word; max-width:150px; border-bottom: solid 1px;'><strong>Afternoon Predicted Fishing Risk</strong></th>" \
+                       "<th style='text-align:center; word-wrap:break-word; max-width:130px; border-bottom: solid 1px; border-left: 1px solid; '><strong>Predicted High Air Temp &#176;F</strong></th>" \
+                       "<th style='text-align:center; border-bottom: solid 1px;  word-wrap:break-word; '><strong>Weather</strong></th>" \
+                       "</tr>"
+    all_rows_str = ""
+    if len(zone_list) > 0:
+        for item in zone_list:
+            print(item)
+            if item['pm_risk'] == "Low":
+                pm_risk_col = risk_colors["green"]
+            elif item['pm_risk'] == "Concern":
+                pm_risk_col = risk_colors["yellow"]
+            elif item['pm_risk'] == "High":
+                pm_risk_col = risk_colors["red"]
+            else:
+                pm_risk_col = "white"
+
+            row_str = f"<tr>" \
+                      f"<td style='font-size:0.9rem; '>{item['zone']}</td>" \
+                      f"<td style='text-align:center; border-left: 1px solid; '>{item['current_temp']}</td>" \
+                      f"<td style='text-align:center; border-left: 1px solid; background-color:{pm_risk_col} '>{item['max_temp']}</td>" \
+                      f"<td style='text-align:center; font-weight: bold; background-color:{pm_risk_col}'>{item['pm_risk'].upper()}</td>" \
+                      f"<td style='text-align:center; border-left: 1px solid'>{item['pm_air_temp']}</td>" \
+                      f"<td><em>{item['pm_weather'].title()}</em></td>" \
+                      f"</tr>"
+            all_rows_str = all_rows_str + row_str
+
+        full_table_str = f"<div><hr><nbsp><h3>Today's <em>PREDICTED</em> Water Temperature and Weather Forecast</h3>" \
+                         f"<table cellspacing='0' cellpadding='3' style='border: 1px solid black;'>" \
+                         f"{table_header_str}{all_rows_str}</table></div>" \
+                         f"<p style='text-align:center; font-size:90%;'>" \
+                         f"Water temperature predictions are made " \
+                         f"using a predictive model developed by " \
+                         f"<a href='https://www.lotichydrological.com'>Lotic Hydrological</a>" \
+                         f" for streams in the ERWC service area. Specific stream reaches may be warmer or " \
+                         f"cooler than those predicted here based on local factors like habitat, topography, and " \
+                         f"changing weather; always directly check conditions at your location.</p><br>"
+        return full_table_str
+    else:
+        return None
+
+
+def build_html_email_message(conditions, forecast):
 
     """  Create an html email body with the risk ratings for each site, tips on warm water fishing, and information
     about the Eagle River Watershed Council. Return the message body as a long string"""
 
-    print("Building html email message.")
+    print("\nBuilding html email message.")
 
     update_time = f"{datetime.now().strftime('%A')}, " \
                   f"{datetime.now().strftime('%B')} " \
@@ -73,7 +169,9 @@ def build_html_email_message(sites_data):
         header_html = contents.replace('[update_time]', update_time)
 
     # make the table of current conditions
-    table_html = build_table_rows(sites_data)
+    yesterday_table_html = conditions
+    # make the afternoon forecast table
+    fx_table_html = forecast
 
     # read in the rest of the email body... the risk key and the footer
     with open("email_templates/risk_key_and_footer.html") as template:
@@ -81,20 +179,13 @@ def build_html_email_message(sites_data):
     contents = contents.replace('[risk_green]', risk_colors["green"])
     contents = contents.replace('[risk_yellow]', risk_colors["yellow"])
     contents = contents.replace('[risk_red]', risk_colors["red"])
-    # add in the weather forecast table
-    locations = [
-        ["Statebridge/Upper Colorado Region", "39.874807", "-106.687783"],
-        ["Lower Eagle/Colorado R @ Dotsero", "39.650938", "-106.942805"],
-        ["Basalt/Lower Roaring Fork Valley", "39.413287", "-107.215794"]
-    ]
-
-    fx = weather_fx.build_fx_table(locations)
-    contents = contents.replace('[WEATHER_FX]', fx)
-
     risk_key_and_footer = contents
-
     # put all the parts together
-    email_html = header_html + table_html + risk_key_and_footer
+    email_html = header_html + fx_table_html + yesterday_table_html + risk_key_and_footer
+
+    # Dump the html to a file for inspection (development only, comment out during deployment)
+    # with open('dev_outputs/view_email_html.html', 'w') as f:
+    #     f.write(f"<html><body>{email_html}</html></body>")
 
     # return a long html string
     return email_html
@@ -133,53 +224,4 @@ def build_text_email_message(sites_data):
     # print(message_body)
     return message_body
 
-
-def send_email(msg_body_text, msg_body_html, msg_recipients, sndr_email, sndr_password):
-
-    """Use smtp library to send an alert email with the current risk message to the app user list."""
-
-    # print(msg_body_html)
-    print("Sending email alert")
-
-    # set up the MIME message object
-    message = MIMEMultipart("alternative")
-    message["Subject"] = 'HTML format email test'
-    message["From"] = sndr_email
-    message["To"] = ", ".join(msg_recipients)
-
-    # Turn the email bodies into plain/html MIMEText objects
-    text_part = MIMEText(msg_body_text, "plain")
-    html_part = MIMEText(msg_body_html, "html")
-
-    # Add HTML/plain-text parts to MIMEMultipart message
-    # The email client will try to render the last part first
-    message.attach(text_part)
-    message.attach(html_part)
-
-    with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
-        connection.ehlo()
-        connection.starttls()
-        connection.login(
-            user=sndr_email,
-            password=sndr_password
-        )
-        connection.sendmail(
-            from_addr=sndr_email,
-            to_addrs=msg_recipients,
-            msg=message.as_string()
-        )
-        print("...message sent.")
-
-
-
-
- ##############################################################################################################
-# table testing data, (must be moved to the top to be used)
-# sites_data = [['EAGLE RIVER BELOW MILK CREEK NEAR WOLCOTT, CO', '394220106431500', '12:15', 55.0, 'LOW', 'Lower Eagle River', 'Water temperature risk currently is LOW for fishing LOWER EAGLE RIVER.\n\n > Water temperatures are generally safe for fishing and fish health.'],
-#               ['GORE CREEK AT MOUTH NEAR MINTURN, CO', '09066510', '11:15', 48.2, 'LOW', 'Gore Creek in Vail', 'Water temperature risk currently is LOW for fishing GORE CREEK IN VAIL.\n\n > Water temperatures are generally safe for fishing and fish health.'],
-#               ['COLORADO RIVER NEAR KREMMLING, CO', '09058000', '11:15', 64.6, 'MODERATE', 'Colorado River between Pumphouse and State Bridge', 'Water temperature risk currently is MODERATE for fishing COLORADO RIVER BETWEEN PUMPHOUSE AND STATE BRIDGE.\n\n > Monitor water temperatures closely for further warming and consider packing it up as they approach or exceed 65 degrees F.\n > Stress from being caught can impact or kill fish well after the time of release.\n > Consider avoiding this stream reach until water temperatures cool off.'],
-#               ['COLORADO RIVER AT CATAMOUNT BRIDGE, CO', '09060799', '11:30', 66.9, 'HIGH', 'Colorado River below State Bridge', 'Water temperature risk currently is HIGH for fishing COLORADO RIVER BELOW STATE BRIDGE.\n\n > Stress from being caught may kill fish several hours or even a day after release.\n > Consider avoiding this stream reach until water temperatures cool off.'],
-#               ['COLORADO RIVER NEAR DOTSERO, CO', '09070500', '12:00', 61.9, 'MODERATE', 'Colorado River above and below Dotsero', 'Water temperature risk currently is MODERATE for fishing COLORADO RIVER ABOVE AND BELOW DOTSERO.\n\n > Monitor water temperatures closely for further warming and consider packing it up as they approach or exceed 65 degrees F.\n > Stress from being caught can impact or kill fish well after the time of release.\n > Consider avoiding this stream reach until water temperatures cool off.'],
-#               ['COLORADO RIVER ABOVE GLENWOOD SPRINGS, CO', '09071750', '11:30', 65.5, 'HIGH', 'Colorado River in Glenwood Canyon', 'Water temperature risk currently is HIGH for fishing COLORADO RIVER IN GLENWOOD CANYON.\n\n > Stress from being caught may kill fish several hours or even a day after release.\n > Consider avoiding this stream reach until water temperatures cool off.'],
-#               ['ROARING FORK RIVER AT GLENWOOD SPRINGS, CO.', '09085000', '11:45', 55.4, 'LOW', 'ROARING FORK RIVER AT GLENWOOD SPRINGS, CO.', 'Water temperature risk currently is LOW for fishing ROARING FORK RIVER AT GLENWOOD SPRINGS, CO..\n\n > Water temperatures are generally safe for fishing and fish health.']]
-# site_data = sites_data[0]
+#

@@ -1,0 +1,7 @@
+# zone names and area forecasts are used in API call to Openweathermap.org to air temperature forecasts,,,,,
+zone,lat,lon,flow_gauge,temp_gauge,model_name
+Middle Eagle (Wolcott Area),39.651101,-106.943897,394220106431500,394220106431500,gam_middle_eagle.obj
+Lower Eagle (Eagle/Gypsum Area),39.651101,-106.943897,9070000,394220106431500,gam_lower_eagle.obj
+Upper Colorado (Pumphouse-State Br),40.05386,-106.37064,9058000,9058000,gam_kremmling.obj
+Upper Colorado (State Br-Catamount),39.8911,-106.8329,9060799,9060799,gam_catamount.obj
+Lower Roaring Fork (Carbondale-GWS),39.4123,-107.2157,9085000,9085000,gam_lower_roaring_fork.obj
