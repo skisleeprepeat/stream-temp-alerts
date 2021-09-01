@@ -116,9 +116,8 @@ def get_q_median(site):
         q_stats, md = nwis.get_stats(sites=site, parameterCd=param, statReportType='daily', statTypeCd='p50')
         # extract the median flow for today's date
         current_month = dt.today().month
-        # current_day = dt.today().day
-        yesterday = dt.today().day - 1
-        median_flow = int(q_stats.loc[(q_stats['month_nu'] == current_month) & (q_stats['day_nu'] == yesterday), 'p50_va'])
+        current_day = dt.today().day
+        median_flow = int(q_stats.loc[(q_stats['month_nu'] == current_month) & (q_stats['day_nu'] == current_day), 'p50_va'])
         return median_flow
     except Exception as err:
         print(err)
