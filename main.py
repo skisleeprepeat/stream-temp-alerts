@@ -53,12 +53,6 @@ ALERT_SEGMENT_ID = os.getenv('MAILCHIMP_ALERT_SEGMENT_ID')
 ALERT_TEST_SEGMENT_ID = os.getenv('MAILCHIMP_ALERT_TEST_SEGMENT_ID')
 REPLY_TO_EMAIL = os.getenv('REPLY_TO_EMAIL')
 
-# reply-to email
-# reply_to = 'alerts@erwc.org'
-# my_email = 'billhoblitzell80@gmail.com'
-# my_password = 'NewRiverGorge4500'
-# to_email = ['billhoblitzell@yahoo.com', 'bill@lotichydrological.com']
-
 
 ###############################################################################
 # MAIN PROGRAM FUNCTIONS
@@ -240,6 +234,10 @@ def check_time(alert_times):
         return False
 
 
+def log_daily_conditions(sites_data_list):
+    pass
+
+
 ##############################################################################
 # PROGRAM DATA
 ##############################################################################
@@ -281,6 +279,10 @@ if (sites_data is not None) and (len(sites_data) > 0):
     evaluate_temp_risk(sites_data)
     usgs_calls.calc_historical_flow_stat(sites_data)
     evaluate_flow_conditions(sites_data)
+
+    ## TODO: write each day's condition to an ongoing .csv or database table to allow for end-of-season analytics/tallies
+    ##log daily conditions(sites_data)
+
     print("Building zone forecasts.")
     zone_forecasts = water_forecasts.forecast_stream_temperature()
     print(f"\n{zone_forecasts}\n")

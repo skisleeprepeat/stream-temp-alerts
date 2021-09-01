@@ -2,14 +2,16 @@
 Get an hourly temperature forecast from Openweathermap.org and return it as an
 list to be used in the stream temperature prediction model
 """
-
+import os
 import requests
 from datetime import datetime as dt
 from datetime import timedelta
 import pandas as pd
+from dotenv import load_dotenv
 
+load_dotenv()
+OW_API_KEY = os.getenv('OW_API_KEY')
 
-OW_API_KEY = "a1fe8f88eef6142c143167e97b40a663"
 
 LOWER_EAGLE_COORDS = ["39.651101", "-106.943897"]  # gypsum ponds/gypsum
 SB_UPPER_C_COORDS = ["39.856671", "-106.650389"]
