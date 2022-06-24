@@ -1,0 +1,21 @@
+# environmental variables and secret keys
+.env
+
+# other documentation files
+App-Admin.gdoc
+venv_readme.txt
+
+# testing scripts and other misc development items
+email_tests.py
+/old_code*
+/dev_outputs*
+email_tests.py
+
+# virtual environments
+
+
+# pycharm files
+/.idea
+
+# ignore all pycache files across the repo
+**/__pycache__/

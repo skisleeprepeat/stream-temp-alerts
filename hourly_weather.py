@@ -19,6 +19,10 @@ BASALT_RF_COORDS = ["39.413287", "-107.215794"]
 
 
 def get_ow_fx(lat, lon, api_key=OW_API_KEY ):
+        '''
+        Use the lat/lon pairs and api key to call the OW API.
+        Return a json object.
+        '''
         ow_api_url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&units=imperial&exclude=minutely&appid={api_key}"
         print(f"Querying Openweathermap at forecast url:\n{ow_api_url}")
         try:
@@ -34,8 +38,8 @@ def get_ow_fx(lat, lon, api_key=OW_API_KEY ):
 
 def unpack_fx_data(forecast):
     """
-    Unpack the json object returned from Openweather API and return the next 24 hours
-    of temperatures and weather descriptions as a dictionary of lists
+    Unpack the json object returned from Openweather API, reformat and return the next 24 hours
+    of temperatures and weather descriptions as a timeseries dataframe.
     """
     print("Unpacking forecast data")
     if forecast is not None:
@@ -61,6 +65,12 @@ def unpack_fx_data(forecast):
 
 
 def get_hourly_fx(lat=LOWER_EAGLE_COORDS[0], lon=LOWER_EAGLE_COORDS[1]):
+
+    '''
+    Get an hourly weather forecast from Open Weather using lat/lon pairs.
+    Return the forecast as a dataframe.
+    '''
+
     print("Collecting hourly forecast for zone")
     try:
         fx = get_ow_fx(lat=lat, lon=lon, api_key=OW_API_KEY)

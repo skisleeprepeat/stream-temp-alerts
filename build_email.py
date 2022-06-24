@@ -37,11 +37,15 @@ q_colors = {
 
 
 def build_yesterday_conditions_table(site_data_list):
+
     """
     Create a color-coded html table element of temperatures, flows, and fish risk rating from
-    the previous afternoon gauge site readings. Return a string of html to use in the update
-    email.
+    the previous afternoon gauge site readings. Accepts a list of dictionaries that have
+    site information (name, risk level, etc.).  Loops through the list and uses them
+    to build an html table that is inserted into a longer html that forms the email body.
+    Return this string of html to use in the update email.
     """
+
     table_header_str = "<tr>" \
                        "<th style='text-align:center; border-bottom: solid 1px;'><strong>Location</strong></th>" \
                        "<th style='text-align:center; word-wrap:break-word; max-width:100px; border-bottom: solid 1px; border-left: 1px solid; '><strong>Yesterday High Water Temp &#176;F</strong></th>" \

@@ -114,11 +114,12 @@ def get_q_median(site):
     print(f"Getting median flows for {site}")
     try:
         q_stats, md = nwis.get_stats(sites=site, parameterCd=param, statReportType='daily', statTypeCd='p50')
+        print(q_stats)
         # extract the median flow for today's date
         current_month = dt.today().month
-        # current_day = dt.today().day
-        yesterday = dt.today().day - 1
-        median_flow = int(q_stats.loc[(q_stats['month_nu'] == current_month) & (q_stats['day_nu'] == yesterday), 'p50_va'])
+        current_day = dt.today().day
+        median_flow = int(q_stats.loc[(q_stats['month_nu'] == current_month) & (q_stats['day_nu'] == current_day), 'p50_va'])
+        print(f"Median flow for today is {median_flow} cfs")
         return median_flow
     except Exception as err:
         print(err)
@@ -134,16 +135,18 @@ def calc_historical_flow_stat(site_data_list):
     for site_info in site_data_list:
         # if there is discharge at the site, make the api call, otherwise fill the
         # dictionary slot with 'no rating'
+        print(f"Evaluating discharge stats:\nyesterday mean q: {site_info['yesterday_mean_q']}")
+        print(f"type, yesterday_mean_q: {type(site_info['yesterday_mean_q'])}")
         if np.isnan(site_info['yesterday_mean_q']):
             site_info['percent_of_median'] = '---'
         else:
             q_median = get_q_median(site_info['site'])
+            print(f"q_median is: {q_median}")
             if q_median is not None:
                 q_perc_median = round((site_info['yesterday_mean_q'] / q_median) * 100)
             else:
                 q_perc_median = '---'
             print(f"Percent of median is: {q_perc_median}")
             site_info['percent_of_median'] = q_perc_median
-
 
 #

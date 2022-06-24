@@ -1,1 +1,0 @@
-agency_cd site_no parameter_cd ts_id loc_web_ds month_nu day_nu begin_yr end_yr count_nu p50_va

@@ -101,6 +101,7 @@ def gather_site_data(sites):
                     max_temp_yesterday = np.nan
             # Pack everything into a dictionary and append to the site data list
             site_data = {'site': site, 'yesterday_mean_q': mean_flow_yesterday, 'yesterday_max_t': max_temp_yesterday}
+            print(f"Site data:\n{site_data}")
             site_data_list.append(site_data)
     return site_data_list
 
@@ -191,9 +192,12 @@ def evaluate_flow_conditions(site_data_list):
 
 def add_risk_message(info_lists):
 
-    """ Append a risk information message to the site information list that gives additional information
-    on how to interpret the risk rating level.  This is now deprecated in the html email and only used
-    in the plain text fallback email."""
+    """
+    Append a risk information message to the site information list that gives additional information
+    on how to interpret the risk rating level.
+    This is now deprecated in the html email and only used
+    in the plain text fallback email.
+    """
 
     for info_list in info_lists:
         risk = info_list[5]
@@ -219,7 +223,7 @@ def add_risk_message(info_lists):
 
 def check_time(alert_times):
 
-    """The main.py script must run every hour by PythonAnywhere because its timestep options
+    """The main.py script runs every hour by PythonAnywhere because PythonAnywhere scheduler timestep options
     are only hourly or daily.  Messages should only be sent in morning and afternoon, so only finish the
     execution at certain times of day (morning, lunch, late afternoon). At other times of day, exit the
     program without making the API call or sending emails."""
@@ -259,6 +263,8 @@ site_list = [
 
 # Set the hours that alerts will go out here, using a string format 'HH' (single digits preceded by '0')
 notification_hours = ['08', '14', '15', '16', '20', '22', '23']
+notification_hours = ['07','06','08', '9','10','11','12','13','14', '15', '16','17','18','19', '20','21' '22', '23']
+# notification_hours = ['08']
 
 
 ##############################################################################
@@ -374,7 +380,8 @@ if (sites_data is not None) and (len(sites_data) > 0):
         )
 
         # Campaign sending may take several seconds, pause execution until sending is finished, if it is
-        # unfinished before the delete command is sent, the delete function call may return an error. (non-fatal)
+        # unfinished before the delete command is sent, the delete function call may return an error.
+        # if it does, its non-fatal, you'll just end up with extra campaigns filling up
         sleep(20)
 
         # Delete the campaign once it is sent, daily campaign frequencies will quickly fill the MC history
