@@ -17,6 +17,7 @@ LOWER_EAGLE_COORDS = ["39.651101", "-106.943897"]  # gypsum ponds/gypsum
 SB_UPPER_C_COORDS = ["39.856671", "-106.650389"]
 BASALT_RF_COORDS = ["39.413287", "-107.215794"]
 
+#------------------------------------------------------------------------------
 
 def get_ow_fx(lat, lon, api_key=OW_API_KEY ):
         '''
@@ -29,7 +30,7 @@ def get_ow_fx(lat, lon, api_key=OW_API_KEY ):
             response = requests.get(ow_api_url, timeout=30)
             print(f"Response status:  {response.status_code}")
             print(response.raise_for_status())
-            print(response.json())
+            # print(response.json())
             return response.json()
         except requests.exceptions.RequestException as err:
             print("Query unsuccessful, returning None")
@@ -47,6 +48,7 @@ def unpack_fx_data(forecast):
         temps = []
         weather = []
         for hourly_dict in forecast["hourly"][:12]:
+            print(hourly_dict)
             # make a correction on the UTC datetime of 6 hours for Mountain Daylight Time
             fx_datetime = dt.utcfromtimestamp(int(hourly_dict["dt"])) - timedelta(hours=6)
             # times.append(fx_datetime.hour)

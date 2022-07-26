@@ -7,6 +7,8 @@ from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+## TODO: remove unnecessary imports
+
 ###############################################################################
 # Constants for html table formatting
 ###############################################################################
@@ -97,7 +99,7 @@ def build_yesterday_conditions_table(site_data_list):
     full_table_str = f"<div><hr><nbsp><h3>Yesterday's <em>OBSERVED</em> Stream Temperature and Flow Conditions</h3>" \
                      f"<table cellspacing='0' cellpadding='3' style='border: 1px solid black;'>" \
                      f"{table_header_str}{all_rows_str}</table></div>" \
-                     f"<p style='font-size:90%;'>This data service is made possible by real-time stream monitoring " \
+                     f"<p style='text-align:center; font-size:90%;'>This data service is made possible by real-time stream monitoring " \
                      f"sites operated by the " \
                      f"<a href='https://www.usgs.gov/centers/co-water/' target='_blank'>US Geological Survey</a> and the " \
                      f"<a href='https://www.coloradoriverdistrict.org' target='_blank'>Colorado River District</a>, " \
@@ -115,7 +117,7 @@ def build_forecast_table(zone_list):
                        "<th style='text-align:center; word-wrap:break-word; max-width:150px; word-wrap: break-word; max-width: 150px; border-bottom: solid 1px; border-left: 1px solid;'><strong>Afternoon Predicted High Water Temp &#176;F</strong></th>" \
                        "<th style='text-align:center; word-wrap:break-word; max-width:150px; border-bottom: solid 1px;'><strong>Afternoon Predicted Fishing Risk</strong></th>" \
                        "<th style='text-align:center; word-wrap:break-word; max-width:130px; border-bottom: solid 1px; border-left: 1px solid; '><strong>Predicted High Air Temp &#176;F</strong></th>" \
-                       "<th style='text-align:center; border-bottom: solid 1px;  word-wrap:break-word; '><strong>Weather</strong></th>" \
+                       "<th style='text-align:center; border-bottom: solid 1px;  word-wrap:break-word; '><strong>PM Weather</strong></th>" \
                        "</tr>"
     all_rows_str = ""
     if len(zone_list) > 0:

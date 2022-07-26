@@ -18,14 +18,17 @@ import numpy as np
 ###############################################################################
 
 def get_site_data(site, param, period='P1D'):
+
     """
     Use a USGS numeric site code and a USGS parameter code to retrieve site data
     for the last 24 hours. Return the webservice response as a json object
     (json object = python dictionary).
     """
+
     url = f"https://waterservices.usgs.gov/nwis/iv/?format=json&sites={site}" \
           f"&parameterCd={param}&siteStatus=all&period={period}"
     print(f"Querying USGS webservice at: {url}")
+
     try:
         response = requests.get(url, timeout=30)
         response.raise_for_status()
@@ -92,15 +95,24 @@ def get_morning_minimum(ts):
 
 
 def get_most_recent_value(ts):
+
     """
-    Return the most recent value from the timeseries dataframe.
+    Return the most recent water temp value from the timeseries dataframe.
     """
-    print(ts.head())
+    # print(ts.head())
     # Find the current water temperature
-    today = dt.now().date().today()
-    today_df = ts.loc[(ts["dateTime"].dt.date == today)]
-    most_recent_temp = today_df.iloc[len(today_df) - 1][1]
-    most_recent_time = today_df.iloc[len(today_df) - 1][0]
+    try:
+        today = dt.now().date().today()
+        today_df = ts.loc[(ts["dateTime"].dt.date == today)]
+        # if the function calls right around midnight, there may not be any data,
+        # in which case, just take the last most recent data from yesterday.
+        print(today_df.tail())
+        most_recent_temp = today_df.iloc[len(today_df) - 1][1]
+        most_recent_time = today_df.iloc[len(today_df) - 1][0]
+    except:
+        most_recent_temp = ts.iloc[len(ts) - 1][1]
+        most_recent_time = ts.iloc[len(ts) - 1][0]
+
     print(f"Most recent value is {most_recent_temp} at {most_recent_time}.\n")
     tw_curr = round(most_recent_temp * (9 / 5) + 32)
     return tw_curr

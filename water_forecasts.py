@@ -176,17 +176,22 @@ def forecast_stream_temperature():
         print("************************************************************************")
         print(f"\nAssessing {site_data['zone']}\n")
         # get the flow and temperature data since midnight
+        print('getting flow data')
         flow_data = usgs_calls.get_site_data(site=fix_site_id(site_data["flow_gauge"]), param='00060')
+        print('getting temperature data')
         temp_data = usgs_calls.get_site_data(site=fix_site_id(site_data["temp_gauge"]), param='00010')
 
         # If both temperature and flow data is available, unpack it and get the relevant values
         # for the prediction model, otherwise go to next site in the loop.
         if (flow_data is not None) and (temp_data is not None):
+            
+            # # TODO: These functions break for timeseries around midnight, (which is okay, the program isn't called at those times), but could use some work
+
             # Get most recent streamflow
             timeseries = flow_data["value"]["timeSeries"]
             if len(timeseries) > 0:
                 flow_ts = usgs_calls.extract_hourly_data(timeseries)
-                print(flow_ts.head())
+                print(flow_ts.tail())
                 current_flow = usgs_calls.get_most_recent_value(flow_ts)
                 print(f"Current flow at {site_data['flow_gauge']} is {current_flow}")
             else:
@@ -302,4 +307,3 @@ def forecast_stream_temperature():
 # with open('fx_html.html', 'w') as f:
 #     f.write(f"<html><body>{fx_table_html}</html></body>")
 # print(fx_table_html)
-

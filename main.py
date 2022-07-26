@@ -3,16 +3,17 @@
 """
 This program uses USGS webservices to call temperature data from gauges
 on the Eagle and Colorado River, assess the temperatures against cold-
-water fishery risk levels, and utilize email and social media portals to
+water fishery risk levels, and utilizes email to
 issue alerts for area anglers.
 """
 
 # Author: Bill Hoblitzell/Lotic Hydrological 6/14/2021
 # Contact: bill@lotichydrological.com, www.lotichydrological.com
 # Modified: 6/16/2021
-# Status: Prototype/testing
+# Modified: 6/25/2022
+# Status: Deployed
 # Copyright: Lotic Hydrological
-# Version 1.0
+# Version 2.0 (2022 added predictive model)
 
 
 ###############################################################################
@@ -35,7 +36,7 @@ import water_forecasts
 
 # Active during testing only, comment out otherwise
 # Note; may need re-enable 'Allow less secure apps' in Google account security if testing has not been used in awhile
-import email_tests
+# import email_tests
 
 
 ###############################################################################
@@ -262,8 +263,11 @@ site_list = [
 ]
 
 # Set the hours that alerts will go out here, using a string format 'HH' (single digits preceded by '0')
-notification_hours = ['08', '14', '15', '16', '20', '22', '23']
-notification_hours = ['07','06','08', '9','10','11','12','13','14', '15', '16','17','18','19', '20','21' '22', '23']
+
+#testing
+notification_hours = ['00','01','07','06','08', '09','10','11','12','13','14', '15', '16','17','18','19', '20','21' '22', '23']
+
+# deployment
 # notification_hours = ['08']
 
 
@@ -306,7 +310,7 @@ if (sites_data is not None) and (len(sites_data) > 0):
     # Build the combined html email content
     html_content = build_email.build_html_email_message(conditions_html, forecast_html)
 
-    # Create the fallback plain text email (need to revamp function)
+    # Create the fallback plain text email (need to revamp these functions)
     text_content = "Text email testing placeholder"
 
     print("\nInitiating MailChimp API calls to build campaign and send new alert email.\n")
@@ -382,7 +386,7 @@ if (sites_data is not None) and (len(sites_data) > 0):
         # Campaign sending may take several seconds, pause execution until sending is finished, if it is
         # unfinished before the delete command is sent, the delete function call may return an error.
         # if it does, its non-fatal, you'll just end up with extra campaigns filling up
-        sleep(20)
+        sleep(30)
 
         # Delete the campaign once it is sent, daily campaign frequencies will quickly fill the MC history
         # on the organization's website user interface for Campaigns
